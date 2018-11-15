@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>用户管理</title>
+<link rel="stylesheet" href="../jquery-easyui-1.6.6/themes/default/easyui.css">
+<link rel="stylesheet" href="../jquery-easyui-1.6.6/themes/icon.css">
+<script type="text/javascript" src="../jquery-easyui-1.6.6/jquery.min.js"></script>
+<script type="text/javascript" src="../jquery-easyui-1.6.6/jquery.easyui.min.js"></script>
+<script type="text/javascript" src="../jquery-easyui-1.6.6/locale/easyui-lang-zh_CN.js"></script>
+
+<script type="text/javascript">
+function validatorloginName(){  
+   var userName=document.getElementById("userName").value;  
+   $.ajax({  
+        type: "POST",      
+        url: "../user/isExistName.do",      
+        data: "userName="+userName,   
+        success: function(data){  
+      if(data=="true"){     
+    	  document.getElementById("error").innerHTML ="<font color='red'>"+"用户名已被注册！"+"</font>";  
+      }else{     
+    	  document.getElementById("error").innerHTML ="<font color='green'>"+"用户名可以使用！"+"</font>";    
+      }   
+      }            
+    });     
+ }         
+$(function(){
+	$("#dg").datagrid({
+		checkbox:true,
+		fit:true,
+		fitColumns:true,
+		rowNumbers:true,
+		pagination:true,
+		url:'../user/findAllUser.do',
+		onLoadSuccess:function(){
+			$("#dg").datagrid('expandAll');
+		} 
+	});
+});
+
+function searchUser(){
+	$("#dg").datagrid('load',{
+		s_userName:$("#s_userName").val(),
+		s_roleId:$("#s_roleId").combobox("getValue")
+	});
+}
+
+function saveUser(){
+	$("#fm").form("submit",{
+		url:url,
+		onSubmit:function(){
+			return $(this).form("validate"); 
+		},
+		success:function(result){
+			var result=eval('('+result+')');
+			if(result.errorMsg){
+				$.messager.alert("系统提示","<font color=red>"+result.errorMsg+"</font>");
+				return;
+			}else{
+				$.messager.alert("系统提示","保存成功！");
+				closeUserDialog();
+				$("#dg").datagrid("reload");
+			}
+		}
+	})
+}
+
+function addArrayUser(){
+	$("#dlg2").dialog("open").dialog("setTitle","批量导入窗口");
+}
+function closeFileDialog(){
+	$("#fm2").form("clear");
+	$("#dlg2").dialog("close");
+}
+function saveFile(){
+	$("#fm2").form("submit",{
+		url:'../user/uploadFile.do',
+		onSubmit:function(){
+			return $(this).form("validate");
+		},
+		success:function(result){
+			var result=eval('('+result+')');
+			if(result.errorMsg){
+				$.messager.alert('系统提示',"<font color='red'>"+result.errorMsg+"</font>");
+				return;
+			}else{
+				$.messager.alert('系统提示','保存成功!');
+				closeFileDialog();
+				$("#dg").datagrid("reload");
+			}
+		}
+	});
+}
+function openUserAddDialog(){
+	$("#dlg").dialog("open").dialog("setTitle","添加用户信息");
+	
+	$("#userName").validatebox({
+		required:true , 
+		missingMessage:'用户名不能为空!' ,
+		precision:0
+	});
+	$("#password").validatebox({
+		required:true , 
+		missingMessage:'密码不能为空!' ,
+		precision:0
+	});
+	$("#roleName").validatebox({
+		required:true , 
+		missingMessage:'部门不能为空!' ,
+		precision:0
+	});
+	url="../user/addUser.do";
+}
+
+function openRoleChooseDialog(){
+	$("#dlgRoleChoose").dialog("open").dialog("setTitle","选择角色");
+}
+
+function chooseRole(){
+	var selectedRows=$("#dg2").datagrid('getSelections');
+	if(selectedRows.length!=1){
+		$.messager.alert("系统提示","请选择一个角色");
+		return;
+	}
+	var row=selectedRows[0];
+	$("#roleId").val(row.roleId);
+	$("#roleName").val(row.roleName);
+	$("#dlgRoleChoose").dialog("close");
+}
+function closeRoleDialog(){
+	$("#dlgRoleChoose").dialog("close");
+}
+function closeUserDialog(){
+	$("#fm").form("clear");
+	$("#dlg").dialog("close");
+}
+function deleteUser(){
+	var userArrays=$("#dg").datagrid("getSelections");
+	var userIdArray=[];
+	for(var i=0;i<userArrays.length;i++){
+		userIdArray.push(userArrays[i].userId);
+	} 
+	var userIds=userIdArray.join(",");
+	$.messager.confirm('警告','你确定要删除这些用户吗?',function(r){
+		if (r){
+			$.post('../user/deleteUser.do',{userIds:userIds},function(result){
+				if (result.success){
+					$("#dg").datagrid("reload");	
+				} else {
+					$.messager.alert('系统提示',"<font color='red'>"+result.errorMsg+"</font>");
+				}
+			},'json');
+		}
+	});
+}
+function openUserModifyDialog(){
+	var rows=$("#dg").datagrid("getSelections");
+	if(rows.length!=1){
+		$.messager.alert("系统提示","请选择一条要修改信息的用户!");
+		return;
+	}
+	var row=rows[0];
+	$("#userId").val(row.userId);
+	$("#userName").val(row.userName);
+	$("#password").val(row.password);
+	$("#roleName").val(row.roleName);
+	$("#userDescription").val(row.userDescription);
+	$('#dlg').dialog('open').dialog('setTitle','修改菜单');
+	url = '../user/updateUser.do';
+}
+
+function downloadArrayUser(){
+	var rows=$("#dg").datagrid("getSelections");
+	if(rows==null||rows==""){
+		$.messager.alert("系统提示","请选中需要下载的用户");
+		return;
+	}
+	var rowsIdArray=[];
+	for(var i=0;i<rows.length;i++){
+		rowsIdArray.push(rows[i].userId);
+	}
+	var userIds=rowsIdArray.join(",");
+	$.messager.confirm('警告','你确定要下载这些用户吗?',function(r){
+		if (r){
+			$.post('../user/downloadUser.do',{userIds:userIds},function(result){
+				if (result.success){
+					$("#dg").datagrid("reload");	
+				} else {
+					$.messager.alert('系统提示',"<font color='red'>"+result.errorMsg+"</font>");
+				}
+			},'json');
+		}
+	});
+}
+</script>
+</head>
+<body>
+	<table id="dg" class="easyui-datagrid" toolbar="#tb">
+		<thead>
+			<tr>
+				<th field="userId" width="50" align="center">编号</th>
+				<th field="userName" width="250" align="center">用户名</th>
+				<th field="password" width="250" align="center">用户密码</th>
+				<th field="roleName" width="250" align="center">所属部门</th>
+				<th field="roleId" hidden="true"></th>
+				<th field="userDescription" width="450" align="center">备注</th>
+			</tr>
+		</thead>
+	</table>
+	<div id="tb">
+		<a href="javascript:openUserAddDialog()" class="easyui-linkbutton" iconCls="icon-add" plain="true">添加</a>
+		<a href="javascript:openUserModifyDialog()" class="easyui-linkbutton" iconCls="icon-edit" plain="true">修改</a>
+		<a href="javascript:deleteUser()" class="easyui-linkbutton" iconCls="icon-remove" plain="true">删除</a>
+		<a href="javascript:addArrayUser()" class="easyui-linkbutton" iconCls="icon-redo" plain="true">批量导入</a>
+		<a href="javascript:downloadArrayUser()" class="easyui-linkbutton" iconCls="icon-download" plain="true">批量下载</a>
+		<div style="float:right">
+			&nbsp;用户名&nbsp;<input type="text" name="s_userName" id="s_userName" size="20" onkeydown="if(event.keyCode==13) searchUser()">
+			&nbsp;所属部门&nbsp;<input class="easyui-combobox" id="s_roleId" name="s_roleId" size="20" data-options="editable:false,
+			panelHeight:'auto',valueField:'roleId',textField:'roleName',url:'../role/roleList.do'">
+			<a href="javascript:searchUser()" class="easyui-linkbutton" iconCls="icon-search" plain="true">搜索</a>
+		</div>
+	</div>
+	<!-- 添加用户窗口 -->
+	<div id="dlg" class="easyui-dialog" style="width:500px;height:400px;padding:10px 20px" closed="true" buttons="#dlg-buttons">
+		<form id="fm" method="post">
+			<table cellspacing="5px">
+			<input type="hidden" id="userId" name="userId"/>
+				<tr>
+					<td>用户名：</td>
+					<td><input type="text" id="userName" name="userName" class="easyui-validatebox" onblur="validatorloginName()"/></td>
+					<td id="error"></td>
+				</tr>
+				<tr>
+					<td>用户密码：</td>
+					<td><input type="text" id="password" name="password" class="easyui-validatebox"/></td>
+				</tr>
+				<tr>
+					<td>角色名称：</td>
+					<td>
+						<input type="hidden" id="roleId" name="roleId"/>
+						<input type="text" id="roleName" name="roleName" class="easyui-validatebox"readonly="readonly"/>
+					</td>
+					<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+					<td colspan="2"><a href="javascript:openRoleChooseDialog()" class="easyui-linkbutton">选择角色</a></td>
+				</tr>
+				<tr>
+					<td>备注：</td>
+					<td colspan="4">
+					<textarea rows="7" cols="50" name="userDescription" id="userDescription"></textarea>
+					</td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	<div id="dlg-buttons">
+		<a href="javascript:saveUser()" class="easyui-linkbutton" iconCls="icon-ok">保存</a>
+		<a href="javascript:closeUserDialog()" class="easyui-linkbutton" iconCls="icon-cancel">关闭</a>
+	</div> 
+	<!-- 角色选择窗口 -->
+	<div id="dlgRoleChoose" class="easyui-dialog" iconCls="icon-search" style="width: 500px;height: 480px;padding: 10px 20px" closed="true" buttons="#dlgRoleChoose-buttons">
+		<div style="height: 40px" align="center">
+			角色名称：<input type="text" id="s_roleName" name="s_roleName" onkeydown="if(event.keyCode==13) searchRole()"/>
+			<a href="javascript:searchRole()" class="easyui-linkbutton" iconCls="icon-search" plain="true">搜索</a>
+		</div>
+		<div style="height: 350px;">
+			<table id="dg2" title="查询结果" class="easyui-datagrid" fitColumns="true" pagination="true" rownumbers="true" fit="true" singleSelect="true" url="../role/findAllRole.do">
+				<thead>
+					<tr>
+						<th field="roleId" width="50" align="center">编号</th>
+						<th field="roleName" width="100" align="center">角色名称</th>
+						<th field="roleDescription" width="50" align="center">备注</th>
+					</tr>
+				</thead>
+			</table>
+		</div>
+	</div>
+	
+	<div id="dlgRoleChoose-buttons">
+		<a href="javascript:chooseRole()" class="easyui-linkbutton" iconCls="icon-ok">确定</a>
+		<a href="javascript:closeRoleDialog()" class="easyui-linkbutton" iconCls="icon-cancel">关闭</a>
+	</div>
+	<!-- 批量导入窗口 -->
+	<div id="dlg2" class="easyui-dialog" style="width:500px;height:150px;padding:10px 20px" closed="true" buttons="#dlg2-buttons">
+		<form id="fm2" action="../user/uploadFile.do" method="post" enctype="multipart/form-data">
+			<input type="file" id="file" name="file" class="file"/>
+		</form>
+	</div>
+	<div id="dlg2-buttons">
+	<a href="javascript:saveFile()" class="easyui-linkbutton" iconCls="icon-ok" plain="true">提交</a>
+		<a href="javascript:closeFileDialog()" class="easyui-linkbutton" iconCls="icon-cancel" plain="true">关闭</a>
+	</div>
+</body>
+</html>

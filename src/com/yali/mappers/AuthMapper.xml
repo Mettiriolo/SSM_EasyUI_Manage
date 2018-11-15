@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+			PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yali.dao.AuthDao">
+	<resultMap type="com.yali.model.Auth" id="authList">
+		<id property="authId" column="authid"/>
+		<result property="authName" column="authname"/>
+		<result property="authPath" column="authpath"/>
+		<result property="parentId" column="parentid"/>
+		<result property="authDescription" column="authdescrition"/>
+		<result property="state" column="state"/>
+		<result property="iconCls" column="iconCls"/>
+	</resultMap>
+
+	<select id="findAllAuthByParentId" resultMap="authList" parameterType="String">
+		select * from t_auth where parentId=#{parentId}
+	</select>
+	
+	<select id="getAuthsByParentId" resultMap="authList" parameterType="Map" >
+		select * from t_auth where parentId=#{parentId} and authId in
+		<foreach collection="authIdsList" item="authId" open="(" close=")" separator=",">  
+            #{authId}  
+ 		</foreach> 
+	</select>
+	<select id="hasChildren" resultType="Integer" parameterType="Map" >
+		select count(authId) from t_auth where parentId=#{parentId} and authId in
+		<foreach collection="authIdsList" item="authId" open="(" close=")" separator=",">  
+            #{authId}  
+ 		</foreach> 
+	</select>
+	
+	<insert id="addAuth" parameterType="Auth">
+		insert into t_auth values(null,#{authName},#{authPath},#{parentId},#{authDescription},#{state},#{iconCls})
+	</insert>
+	
+	<update id="updateState" parameterType="String">
+		update t_auth set state=#{0} where authId=#{1}
+	</update>
+	
+	<update id="updateAuth" parameterType="Auth">
+		update t_auth
+		<set>
+			<if test="auth.authName!=null">
+				authName=#{authName}
+			</if>
+			<if test="auth.authPath!=null">
+				authPath=#{authPath}
+			</if>
+			<if test="auth.authDescription!=null">
+				authDescription=#{authDescription}
+			</if>
+			<if test="auth.iconCls!=null">
+				iconCls=#{iconCls}
+			</if>
+			<where>
+				authId=#{authId}
+			</where>
+		</set>
+		
+	</update>
+	
+	<select id="isLeaf" parameterType="String" resultType="Integer">
+		select count(*) from t_auth where parentId=#{authId}
+	</select>
+	
+	<select id="isOneParent" parameterType="String" resultType="Integer">
+		select count(*) from t_auth where parentId=#{parentId}
+	</select>
+	
+	<delete id="deleteAuth" parameterType="String">
+		delete from t_auth where authId=#{authId}
+	</delete>
+	
+</mapper>

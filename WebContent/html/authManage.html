@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>菜单管理</title>
+<link rel="stylesheet" href="../jquery-easyui-1.6.6/themes/default/easyui.css">
+<link rel="stylesheet" href="../jquery-easyui-1.6.6/themes/icon.css">
+<script type="text/javascript" src="../jquery-easyui-1.6.6/jquery.min.js"></script>
+<script type="text/javascript" src="../jquery-easyui-1.6.6/jquery.easyui.min.js"></script>
+<script type="text/javascript" src="../jquery-easyui-1.6.6/locale/easyui-lang-zh_CN.js"></script>
+
+<script type="text/javascript">
+	// 加载treegrid 
+	$(function(){
+		$("#treeGrid").treegrid({
+			url:'../auth/findAllAuth.do',
+			onLoadSuccess:function(){
+				$("#treeGrid").treegrid('expandAll');
+			} 
+		});
+	});
+	//加载图标
+	function formatIconCls(value,row,index){
+		return "<div class="+value+">&nbsp;</div>"
+	}
+	//新建菜单
+	function openAuthAddDialog(){
+		var node=$("#treeGrid").treegrid("getSelected");
+		if(node==null){
+			$.messager.alert("提示信息","请选择一个父节点!");
+			return;
+		}
+		$("#dlg").dialog("open").dialog("setTitle","添加菜单");
+		$("#parentId").val(node.id);
+		url="../auth/addAuth.do";
+	}
+	//修改菜单
+	function openAuthModifyDialog(){
+		var row=$("#treeGrid").treegrid("getSelected");
+		if (row){
+			 $("#fm").form("load",row);
+			 $("#authName").val(row.text);
+			 $("#authId").val(row.id);
+			$('#dlg').dialog('open').dialog('setTitle','修改菜单');
+			url = '../auth/updateAuth.do';
+		}else{
+			$.messager.alert("提示信息","请选择要修改的菜单!");
+		}
+	}
+	//提交按钮
+	function saveAuth(){
+		$("#fm").form("submit",{
+			url:url,
+			onSubmit:function(){
+				return $(this).form("validate");
+			},
+			success:function(result){
+				var result=eval('('+result+')');
+				if(result.errorMsg){
+					$.messager.alert('系统提示',"<font color='red'>"+result.errorMsg+"</font>");
+					return;
+				}else{
+					$.messager.alert('系统提示','保存成功!');
+					closeAuthDialog();
+					$("#treeGrid").treegrid("reload");
+				}
+			}
+		});
+	} 
+	
+	//关闭窗口
+	function closeAuthDialog(){
+		$("#dlg").dialog("close");
+		$("#fm").form("clear");
+	}
+	
+	//删除菜单
+	function deleteAuth(){
+		var node=$("#treeGrid").treegrid("getSelected");
+		if(node==null){
+			$.messager.alert("系统提示","请选择要删除的菜单!");
+			return;
+		}
+		$.messager.confirm('警告','你确定要删除此菜单吗?',function(r){
+			if (r){
+				$.post('../auth/deleteAuth.do',{authId:node.id,parentId:node.parentId},function(result){
+					if (result.success){
+						$("#treeGrid").treegrid("reload");	
+					} else {
+						$.messager.alert('系统提示',"<font color='red'>"+result.errorMsg+"</font>");
+					}
+				},'json');
+			}
+		});
+	}
+	
+</script>
+
+</head>
+<body>
+	<table id="treeGrid" title="菜单管理" class="easyui-treegrid" toolbar="#toolbar"
+		data-options="idField:'id',treeField:'text',fit:true,fitColumns:true,rowNumbers:true">
+		<thead>
+			<tr>
+				<th field="id" width="20px" align="center">编号</th>
+				<th field="text" width="100px">名称</th>
+				<th field="authPath" width="150px" align="center">路径</th>
+			    <!-- <th field="parentId" width="30px" align="center" >父节点</th>
+				<th field="state" width="50px" align="center">状态</th> -->
+				<th field="iconCls" width="50px" align="center" formatter="formatIconCls" >图标</th>
+				<th field="autoDescription" width="150px" align="center">备注</th>
+			</tr>
+		</thead>
+	</table>
+	<div id="toolbar">
+		<a href="javascript:openAuthAddDialog()" class="easyui-linkbutton" iconCls="icon-add" plain="true">新建</a>
+		<a href="javascript:openAuthModifyDialog()" class="easyui-linkbutton" iconCls="icon-edit" plain="true">编辑</a>
+		<a href="javascript:deleteAuth()" class="easyui-linkbutton" iconCls="icon-remove" plain="true">删除</a>
+	</div>
+	
+	<div id="dlg" class="easyui-dialog" closed="true" buttons="#dlg-buttons">
+		<form id="fm" method="post">
+		<input type="hidden" id="authId" name="authId" >
+			<table>
+				<tr>
+					<td>名称</td>
+					<td><input type="text" id="authName" name="authName" class="easyui-validatebox" required="true"></td>
+					<td>样式</td>
+					<td><input type="text" id="iconCls" name="iconCls" class="easyui-validatebox"></td>
+				</tr>
+				<tr>
+					<td>路径</td>
+					<td><input type="text" id="authPath" name="authPath" class="easyui-validatebox" required="true"></td>
+				</tr>
+				<tr>
+					<td></td>
+					<td><input type="hidden" id="state" name="state" class="easyui-validatebox"></td>
+					<td></td>
+					<td><input type="hidden" id="parentId" name="parentId" class="easyui-validatebox"></td>
+				</tr>
+				<tr>
+					<td>备注</td>
+					<td>
+						<textarea rows="7" cols="50" id="authDescription" name="authDescription"></textarea>
+					</td>
+				</tr>
+			</table>
+		</form>
+	</div>
+	<div id="dlg-buttons">
+		<a href="javascript:saveAuth()" class="easyui-linkbutton" iconCls="icon-ok">保存</a>
+		<a href="javascript:closeAuthDialog()" class="easyui-linkbutton" iconCls="icon-cancel">关闭</a>
+	</div>
+</body>                           
+</html> 

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+			PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yali.dao.RoleDao">
+	<resultMap type="com.yali.model.Role" id="roleList">
+		<id property="roleId" column="roleid"/>
+		<result property="roleName" column="rolename"/>
+		<result property="authIds" column="authids"></result>
+		<result property="roleDescription" column="roledescription"></result>
+	</resultMap>
+
+	<select id="findAllRole" resultMap="roleList">
+		select * from t_role
+	</select>
+	
+	<select id="findRoleById" parameterType="Integer" resultType="Role">
+		select * from t_role where roleId=#{roleId}
+	</select>
+	<select id="getRoleNameById" parameterType="Integer" resultType="String">
+		select roleName from t_role where roleId=#{roleId}
+	</select>
+	
+	<select id="getAuthIdsById" parameterType="Integer" resultType="String">
+		select authIds from t_role where roleId=#{roleId}
+	</select>
+	
+	<insert id="addRole" parameterType="Role">
+	</insert>
+	
+	<update id="updateRole" parameterType="Role">
+		update t_role set roleName=#{roleName},remark=#{remark},del=#{del} where roleid=#{roleId}
+	</update>
+	
+	
+	<delete id="deleteRole" parameterType="Integer">
+		delete from t_role where roleId=#{roleId}
+	</delete>
+	
+	<select id="findRolesByPageAndSearch" parameterType="Map" resultMap="roleList">
+		select * from t_role
+		<if test="role.roleName!=null">
+			<where>
+					and roleName like '%${role.roleName}%'
+			</where>
+		</if>
+			limit #{pageBean.currentPage},#{pageBean.pageSize}
+	</select>
+	
+	<update id="roleAuthIdsUpdate" parameterType="Map">
+		update t_role set authIds=#{authIds} where roleId=#{roleId}
+	</update>
+	
+	<select id="roleList" resultMap="roleList">
+		select roleName,roleId from t_role
+	</select>
+</mapper>

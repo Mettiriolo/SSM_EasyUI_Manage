@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+			PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+			"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yali.dao.UserDao">
+	<resultMap type="com.yali.model.User" id="userList">
+		<id property="userId" column="userid"/>
+		<result property="userName" column="username"/>
+		<result property="password" column="password"/>
+		<result property="userType" column="userType"/>
+		<result property="roleId" column="roleId"/>
+		<result property="userDescription" column="userDescription"/>
+	</resultMap>
+
+	<select id="login" parameterType="User" resultMap="userList">
+		select * from t_user where userName=#{userName} and password=#{password}
+	</select>
+	
+	<select id="findAllUserByPageAndSearch" parameterType="Map" resultMap="userList">
+		select * from t_user where 1=1
+		<if test="user.userName!=null">
+			and userName=${user.userName}
+		</if>
+		<if test="user.roleId!=0 and user.roleId!=-1">
+			and roleId=${user.roleId}
+		</if>
+		limit #{pageBean.currentPage},#{pageBean.pageSize}
+	</select>
+	
+	<insert id="addUser" parameterType="User">
+		insert into t_user values(null,#{userName},#{password},#{userType},#{roleId},#{userDescription});
+	</insert>
+	
+	<delete id="deleteUser" parameterType="Integer">
+		delete from t_user where userId=#{userId}
+	</delete>
+	
+	<select id="isExistUserName" parameterType="String" resultType="Integer">
+		select count(*) from t_user where userName=#{userName}
+	</select>
+	
+	<select id="findUserById" parameterType="Integer" resultMap="userList">
+		select * from user where userId=#{userId}
+	</select>
+</mapper>
